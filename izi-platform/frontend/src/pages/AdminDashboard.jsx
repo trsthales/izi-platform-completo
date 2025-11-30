@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 
 const AdminDashboard = () => {
   const { user } = useAuthStore()
+  const [refreshKey, setRefreshKey] = useState(0)
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -25,6 +26,37 @@ const AdminDashboard = () => {
 
     load()
   }, [])
+
+  // Delete course handler
+  const handleDelete = async (courseId) => {
+    if (!confirm('Tem certeza que deseja excluir este curso?')) return
+    try {
+      await courseService.deleteCourse(courseId)
+      // refresh list
+      setRefreshKey(k => k + 1)
+      // reload
+      const data = await courseService.getCourses()
+      setCourses(data)
+    } catch (err) {
+      alert('Erro ao excluir curso')
+      console.error(err)
+    }
+  }
+
+  useEffect(() => {
+    // reload when refreshKey changes
+    ;(async () => {
+      try {
+        setLoading(true)
+        const data = await courseService.getCourses()
+        setCourses(data)
+      } catch (err) {
+        setError('Erro ao carregar cursos')
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [refreshKey])
 
   if (!user?.is_admin) {
     return (
@@ -76,7 +108,8 @@ const AdminDashboard = () => {
                       <td className="px-4 py-3">{new Date(course.created_at).toLocaleString()}</td>
                       <td className="px-4 py-3">
                         <Link to={`/curso/${course.id}`} className="text-primary-600 hover:underline mr-4">Ver</Link>
-                        {/* Future: Edit/Delete actions */}
+                        <Link to={`/admin/cursos/${course.id}/editar`} className="text-indigo-600 hover:underline mr-4">Editar</Link>
+                        <button onClick={() => handleDelete(course.id)} className="text-red-600 hover:underline">Excluir</button>
                       </td>
                     </tr>
                   ))

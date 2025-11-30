@@ -129,6 +129,16 @@ export const courseService = {
     return response.data?.data?.course || null
   },
 
+  async updateCourse(courseId, courseData) {
+    const response = await api.put(`/courses/${courseId}`, courseData)
+    return response.data?.data?.course || null
+  },
+
+  async deleteCourse(courseId) {
+    const response = await api.delete(`/courses/${courseId}`)
+    return response.data || null
+  },
+
   async getMyEnrollments() {
     const response = await api.get('/enrollments/my-courses')
     return response.data?.data?.enrollments || []

@@ -13,6 +13,7 @@ import CoursePage from './pages/CoursePage'
 import NotFoundPage from './pages/NotFoundPage'
 import CreateCoursePage from './pages/CreateCoursePage'
 import AdminDashboard from './pages/AdminDashboard'
+import EditCoursePage from './pages/EditCoursePage'
 
 // Create router with future flag to opt into v7 relative splat behavior
 const router = createBrowserRouter([
@@ -25,8 +26,9 @@ const router = createBrowserRouter([
       { path: 'registrar', element: <PublicRoute><RegisterPage /></PublicRoute> },
       { path: 'cursos', element: <ProtectedRoute><MyCoursesPage /></ProtectedRoute> },
       { path: 'admin/cursos', element: <AdminRoute><AdminDashboard /></AdminRoute> },
-      { path: 'curso/:courseId', element: <ProtectedRoute><CoursePage /></ProtectedRoute> },
       { path: 'admin/cursos/novo', element: <AdminRoute><CreateCoursePage /></AdminRoute> },
+      { path: 'admin/cursos/:id/editar', element: <AdminRoute><EditCoursePage /></AdminRoute> },
+      { path: 'curso/:courseId', element: <ProtectedRoute><CoursePage /></ProtectedRoute> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

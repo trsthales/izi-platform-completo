@@ -250,9 +250,70 @@ export const createCourse = [
   })
 ]
 
+// Update course (admin only)
+export const updateCourse = [
+  asyncHandler(async (req, res) => {
+    const { id } = req.params
+    const {
+      title, description, category, duration, level, price, icon, thumbnail_url, link, is_published
+    } = req.body
+
+    // Build dynamic update
+    const updates = []
+    const values = []
+    let paramCount = 0
+
+    if (title !== undefined) { updates.push(`title = $${++paramCount}`); values.push(title) }
+    if (description !== undefined) { updates.push(`description = $${++paramCount}`); values.push(description) }
+    if (category !== undefined) { updates.push(`category = $${++paramCount}`); values.push(category) }
+    if (duration !== undefined) { updates.push(`duration = $${++paramCount}`); values.push(duration) }
+    if (level !== undefined) { updates.push(`level = $${++paramCount}`); values.push(level) }
+    if (price !== undefined) { updates.push(`price = $${++paramCount}`); values.push(price) }
+    if (icon !== undefined) { updates.push(`icon = $${++paramCount}`); values.push(icon) }
+    if (thumbnail_url !== undefined) { updates.push(`thumbnail_url = $${++paramCount}`); values.push(thumbnail_url) }
+    if (link !== undefined) { updates.push(`link = $${++paramCount}`); values.push(link) }
+    if (is_published !== undefined) { updates.push(`is_published = $${++paramCount}`); values.push(is_published) }
+
+    if (updates.length === 0) {
+      throw new AppError('Nenhum campo para atualizar', 400, 'NO_UPDATES')
+    }
+
+    values.push(id)
+
+    const result = await query(
+      `UPDATE courses SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${paramCount + 1} RETURNING *`,
+      values
+    )
+
+    if (result.rows.length === 0) {
+      throw new AppError('Curso não encontrado', 404, 'COURSE_NOT_FOUND')
+    }
+
+    res.json({ success: true, message: 'Curso atualizado com sucesso', data: { course: result.rows[0] } })
+  })
+]
+
+// Delete course (admin only)
+export const deleteCourse = [
+  asyncHandler(async (req, res) => {
+    const { id } = req.params
+
+    // Delete course and cascade will handle modules/enrollments if set
+    const result = await query('DELETE FROM courses WHERE id = $1 RETURNING id', [id])
+
+    if (result.rowCount === 0) {
+      throw new AppError('Curso não encontrado', 404, 'COURSE_NOT_FOUND')
+    }
+
+    res.json({ success: true, message: 'Curso excluído com sucesso' })
+  })
+]
+
 export default {
   getAllCourses,
   getCourse,
   getCourseModules,
-  createCourse
+  createCourse,
+  updateCourse,
+  deleteCourse
 }

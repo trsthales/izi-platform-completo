@@ -90,9 +90,66 @@ export const validateCreateCourse = [
   
   body('duration')
     .optional()
-    .isInt({ min: 1, max: 1000 })
-    .withMessage('Duração deve ser um número entre 1 e 1000'),
-  
+    .isInt({ min: 1, max: 10000 })
+    .withMessage('Duração deve ser um número entre 1 e 10000'),
+
+  body('level')
+    .optional()
+    .isIn(['beginner', 'intermediate', 'advanced'])
+    .withMessage('Nível inválido'),
+
+  body('price')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Preço inválido'),
+
+  body('link')
+    .optional()
+    .isURL({ require_protocol: true })
+    .withMessage('Link deve ser uma URL válida (incluir http:// ou https://)'),
+
+  handleValidationErrors
+]
+
+// Validator for updating a course (all fields optional but validated if present)
+export const validateUpdateCourse = [
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 200 })
+    .withMessage('Título deve ter entre 3 e 200 caracteres'),
+
+  body('description')
+    .optional()
+    .trim()
+    .isLength({ min: 10, max: 2000 })
+    .withMessage('Descrição deve ter entre 10 e 2000 caracteres'),
+
+  body('category')
+    .optional()
+    .isIn(['programming', 'design', 'marketing', 'business', 'other'])
+    .withMessage('Categoria inválida'),
+
+  body('duration')
+    .optional()
+    .isInt({ min: 1, max: 10000 })
+    .withMessage('Duração deve ser um número entre 1 e 10000'),
+
+  body('level')
+    .optional()
+    .isIn(['beginner', 'intermediate', 'advanced'])
+    .withMessage('Nível inválido'),
+
+  body('price')
+    .optional()
+    .isFloat({ min: 0 })
+    .withMessage('Preço inválido'),
+
+  body('link')
+    .optional()
+    .isURL({ require_protocol: true })
+    .withMessage('Link deve ser uma URL válida (incluir http:// ou https://)'),
+
   handleValidationErrors
 ]
 
@@ -216,5 +273,6 @@ export default {
   validateCourseProgressQuery,
   validatePagination,
   validateSearch,
+  validateUpdateCourse,
   handleValidationErrors
 }
