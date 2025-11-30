@@ -6,6 +6,8 @@ import {
   validatePagination,
   validateSearch 
 } from '../middleware/validators.js'
+import logger from '../utils/logger.js'
+import maskObject from '../utils/logMask.js'
 
 // Get all courses (with optional authentication)
 export const getAllCourses = [
@@ -13,6 +15,7 @@ export const getAllCourses = [
   ...validatePagination,
   ...validateSearch,
   asyncHandler(async (req, res) => {
+    logger.info('getAllCourses called', { requestId: req.requestId, userId: req.user?.id, query: req.query })
     const page = parseInt(req.query.page) || 1
     const limit = parseInt(req.query.limit) || 10
     const offset = (page - 1) * limit
@@ -96,7 +99,7 @@ export const getAllCourses = [
     const coursesResult = await query(coursesQuery, values)
     
     // Get student count for each course
-    const coursesWithStats = await Promise.all(
+    let coursesWithStats = await Promise.all(
       coursesResult.rows.map(async (course) => {
         const statsResult = await query(
           'SELECT COUNT(*) as student_count FROM enrollments WHERE course_id = $1',
@@ -107,19 +110,31 @@ export const getAllCourses = [
       })
     )
 
-    res.json({
-      success: true,
-      data: {
-        courses: coursesWithStats,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit),
-          hasNext: page < Math.ceil(total / limit),
-          hasPrev: page > 1
+    // Hide the course link for users who are not admins and not enrolled in that course
+    if (!req.user?.is_admin) {
+      coursesWithStats = coursesWithStats.map((c) => {
+        if (!c.is_enrolled) {
+          // remove sensitive URL property for users without access
+          delete c.link
         }
-      }
+        return c
+      })
+    }
+
+    logger.info('getAllCourses success', { requestId: req.requestId, userId: req.user?.id, returned: coursesWithStats.length })
+     res.json({
+       success: true,
+       data: {
+         courses: coursesWithStats,
+         pagination: {
+           page,
+           limit,
+           total,
+           pages: Math.ceil(total / limit),
+           hasNext: page < Math.ceil(total / limit),
+           hasPrev: page > 1
+         }
+       }
     })
   })
 ]
@@ -129,8 +144,9 @@ export const getCourse = [
   validateCourseId,
   optionalAuth,
   asyncHandler(async (req, res) => {
-    const { id } = req.params
-    const userId = req.user?.id
+    logger.info('getCourse called', { requestId: req.requestId, userId: req.user?.id, courseId: req.params.id })
+     const { id } = req.params
+     const userId = req.user?.id
 
     const courseQuery = userId
       ? `
@@ -167,6 +183,7 @@ export const getCourse = [
     const courseResult = await query(courseQuery, courseValues)
 
     if (courseResult.rows.length === 0) {
+      logger.warn('getCourse not found', { requestId: req.requestId, courseId: id })
       throw new AppError('Curso não encontrado', 404, 'COURSE_NOT_FOUND')
     }
 
@@ -179,19 +196,27 @@ export const getCourse = [
     )
     course.students = parseInt(statsResult.rows[0].student_count)
 
-    res.json({
-      success: true,
-      data: { course }
-    })
-  })
-]
+    // Hide the link property unless the requester is admin or is enrolled
+    if (!req.user?.is_admin && !course.is_enrolled) {
+      delete course.link
+    }
++
++    logger.info('getCourse success', { requestId: req.requestId, userId: req.user?.id, courseId: id })
 
-// Get course modules
-export const getCourseModules = [
-  validateCourseId,
-  asyncHandler(async (req, res) => {
-    const { id } = req.params
-    const userId = req.user.id
+     res.json({
+       success: true,
+       data: { course }
+     })
+   })
+ ]
+
+ // Get course modules
+ export const getCourseModules = [
+   validateCourseId,
+   asyncHandler(async (req, res) => {
+    logger.info('getCourseModules called', { requestId: req.requestId, userId: req.user?.id, courseId: req.params.id })
+     const { id } = req.params
+     const userId = req.user.id
 
     // Check if user is enrolled
     const enrollmentResult = await query(
@@ -219,13 +244,16 @@ export const getCourseModules = [
       success: true,
       data: { modules: modulesResult.rows }
     })
-  })
-]
++
++    logger.info('getCourseModules success', { requestId: req.requestId, userId, courseId: id, modules: modulesResult.rows.length })
+   })
+ ]
 
-// Create course (admin only)
-export const createCourse = [
-  asyncHandler(async (req, res) => {
-    const { title, description, category, duration, level, price, icon, thumbnail_url, link, is_published } = req.body
+ // Create course (admin only)
+ export const createCourse = [
+   asyncHandler(async (req, res) => {
+    logger.info('createCourse called', { requestId: req.requestId, userId: req.user?.id, title: req.body.title, body: maskObject(req.body) })
+     const { title, description, category, duration, level, price, icon, thumbnail_url, link, is_published } = req.body
 
     if (!title || !description) {
       throw new AppError('Título e descrição são obrigatórios', 400, 'MISSING_FIELDS')
@@ -247,13 +275,16 @@ export const createCourse = [
       message: 'Curso criado com sucesso',
       data: { course: result }
     })
-  })
-]
++
++    logger.info('createCourse success', { requestId: req.requestId, userId: req.user?.id, courseId: result.id })
+   })
+ ]
 
-// Update course (admin only)
-export const updateCourse = [
-  asyncHandler(async (req, res) => {
-    const { id } = req.params
+ // Update course (admin only)
+ export const updateCourse = [
+   asyncHandler(async (req, res) => {
+    logger.info('updateCourse called', { requestId: req.requestId, userId: req.user?.id, courseId: req.params.id, body: maskObject(req.body) })
+     const { id } = req.params
     const {
       title, description, category, duration, level, price, icon, thumbnail_url, link, is_published
     } = req.body
@@ -290,13 +321,16 @@ export const updateCourse = [
     }
 
     res.json({ success: true, message: 'Curso atualizado com sucesso', data: { course: result.rows[0] } })
-  })
-]
++
++    logger.info('updateCourse success', { requestId: req.requestId, userId: req.user?.id, courseId: id })
+   })
+ ]
 
-// Delete course (admin only)
-export const deleteCourse = [
-  asyncHandler(async (req, res) => {
-    const { id } = req.params
+ // Delete course (admin only)
+ export const deleteCourse = [
+   asyncHandler(async (req, res) => {
+    logger.info('deleteCourse called', { requestId: req.requestId, userId: req.user?.id, courseId: req.params.id })
+     const { id } = req.params
 
     // Delete course and cascade will handle modules/enrollments if set
     const result = await query('DELETE FROM courses WHERE id = $1 RETURNING id', [id])
@@ -306,14 +340,16 @@ export const deleteCourse = [
     }
 
     res.json({ success: true, message: 'Curso excluído com sucesso' })
-  })
-]
++
++    logger.info('deleteCourse success', { requestId: req.requestId, userId: req.user?.id, courseId: id })
+   })
+ ]
 
-export default {
-  getAllCourses,
-  getCourse,
-  getCourseModules,
-  createCourse,
-  updateCourse,
-  deleteCourse
-}
+ export default {
+   getAllCourses,
+   getCourse,
+   getCourseModules,
+   createCourse,
+   updateCourse,
+   deleteCourse
+ }

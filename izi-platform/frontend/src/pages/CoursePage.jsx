@@ -50,6 +50,20 @@ const CoursePage = () => {
     }
   }
 
+  const handleEnrollCourse = async () => {
+    try {
+      setLoading(true)
+      await courseService.enrollCourse(courseId)
+      // After enrolling, reload course data to get is_enrolled and link
+      await loadCourseData()
+    } catch (err) {
+      console.error('Error enrolling:', err)
+      alert('Erro ao matricular-se no curso. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleModuleComplete = async (moduleId) => {
     try {
       await courseService.updateProgress(moduleId, true)
@@ -137,13 +151,13 @@ const CoursePage = () => {
     )
   }
 
-  if (!course || modules.length === 0) {
+  if (!course) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Curso não encontrado</h2>
-          <p className="text-gray-600 mb-6">Este curso pode ter sido removido ou você não está matriculado.</p>
+          <p className="text-gray-600 mb-6">Este curso pode ter sido removido ou não existe.</p>
           <Link to="/cursos" className="btn-primary">
             Voltar aos Cursos
           </Link>
@@ -173,6 +187,15 @@ const CoursePage = () => {
               <div className="space-y-4">
                 <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
                 <p className="text-lg text-gray-600">{course.description}</p>
+              </div>
+
+              {/* Access / Enroll actions */}
+              <div className="mt-4">
+                {!course.is_enrolled ? (
+                  <button onClick={handleEnrollCourse} className="btn-primary mr-3">Matricular-se</button>
+                ) : (course.link ? (
+                  <a href={course.link} target="_blank" rel="noopener noreferrer" className="btn-primary mr-3">Abrir Conteúdo</a>
+                ) : null)}
               </div>
 
               <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">

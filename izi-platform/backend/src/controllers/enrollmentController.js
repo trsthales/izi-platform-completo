@@ -2,6 +2,7 @@ import { query, transaction } from '../config/database.js'
 import { AppError, asyncHandler } from '../middleware/errorHandler.js'
 import { authenticate } from '../middleware/auth.js'
 import { validateEnrollment } from '../middleware/validators.js'
+import logger from '../utils/logger.js'
 
 // Get user's enrolled courses
 export const getMyEnrollments = [
@@ -75,6 +76,8 @@ export const enrollInCourse = [
       return result.rows[0]
     })
 
+    logger.info('User enrolled in course', { userId, courseId, enrollmentId: enrollmentResult.id, requestId: req.requestId })
+
     res.status(201).json({
       success: true,
       message: 'Matrícula realizada com sucesso',
@@ -120,6 +123,8 @@ export const unenrollFromCourse = [
         [courseId, userId]
       )
     })
+
+    logger.info('User unenrolled from course', { userId, courseId, requestId: req.requestId })
 
     res.json({
       success: true,

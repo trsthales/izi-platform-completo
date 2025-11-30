@@ -3,6 +3,7 @@ import { query, transaction } from '../config/database.js'
 import { AppError, asyncHandler } from '../middleware/errorHandler.js'
 import { generateToken, authenticate } from '../middleware/auth.js'
 import { validateRegister, validateLogin, validateUpdateProfile } from '../middleware/validators.js'
+import logger from '../utils/logger.js'
 
 // Register new user
 export const register = [
@@ -38,6 +39,8 @@ export const register = [
 
     // Generate token
     const token = generateToken(result.id)
+
+    logger.info('User registered', { userId: result.id, email: result.email, requestId: req.requestId })
 
     res.status(201).json({
       success: true,
@@ -86,6 +89,8 @@ export const login = [
     // Remove password from response
     delete user.password
 
+    logger.info('User logged in', { userId: user.id, email: user.email, requestId: req.requestId })
+
     res.json({
       success: true,
       message: 'Login realizado com sucesso',
@@ -117,6 +122,8 @@ export const getProfile = [
     }
 
     const user = userResult.rows[0]
+
+    logger.info('Profile fetched', { userId: user.id, requestId: req.requestId })
 
     // Get user statistics
     const statsResult = await query(

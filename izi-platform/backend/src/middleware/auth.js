@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { query } from '../config/database.js'
+import logger from '../utils/logger.js'
 
 // Generate JWT token
 export const generateToken = (userId) => {
@@ -15,6 +16,7 @@ export const verifyToken = (token) => {
   try {
     return jwt.verify(token, process.env.JWT_SECRET || 'izi-secret-key')
   } catch (error) {
+    logger.warn('verifyToken failed', { message: error.message })
     throw new Error('Token inválido')
   }
 }
@@ -25,6 +27,7 @@ export const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn('authenticate missing token', { requestId: req.requestId })
       return res.status(401).json({
         error: 'Token de acesso necessário',
         code: 'MISSING_TOKEN'
@@ -41,6 +44,7 @@ export const authenticate = async (req, res, next) => {
     )
     
     if (userResult.rows.length === 0) {
+      logger.warn('authenticate user not found', { requestId: req.requestId, userId: decoded.userId })
       return res.status(401).json({
         error: 'Usuário não encontrado',
         code: 'USER_NOT_FOUND'
@@ -48,8 +52,10 @@ export const authenticate = async (req, res, next) => {
     }
 
     req.user = userResult.rows[0]
+    logger.info('authenticate success', { requestId: req.requestId, userId: req.user.id })
     next()
   } catch (error) {
+    logger.warn('authenticate failed', { requestId: req.requestId, error: error.message })
     return res.status(401).json({
       error: 'Token inválido ou expirado',
       code: 'INVALID_TOKEN'
@@ -72,10 +78,12 @@ export const optionalAuth = async (req, res, next) => {
       )
       
       if (userResult.rows.length > 0) {
+        logger.info('optionalAuth authenticated', { requestId: req.requestId, userId: decoded.userId })
         req.user = userResult.rows[0]
       }
     }
   } catch (error) {
+    logger.warn('optionalAuth failed', { requestId: req.requestId, error: error.message })
     // Silently continue without authentication
   }
   
@@ -128,6 +136,7 @@ export const checkResourceOwnership = (resourceField = 'user_id') => {
       req.resource = resource.rows[0]
       next()
     } catch (error) {
+      logger.error('checkResourceOwnership failed', { requestId: req.requestId, error: error.message })
       return res.status(500).json({
         error: 'Erro ao verificar permissão',
         code: 'PERMISSION_CHECK_ERROR'

@@ -5,6 +5,8 @@ import morgan from 'morgan'
 import compression from 'compression'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
+import * as Sentry from '@sentry/node'
+import os from 'os'
 
 // Import routes
 import authRoutes from './routes/auth.js'
@@ -15,6 +17,8 @@ import progressRoutes from './routes/progress.js'
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js'
+import logger from './utils/logger.js'
+import requestIdMiddleware from './middleware/requestId.js'
 
 // Load environment variables
 dotenv.config()
@@ -22,6 +26,20 @@ dotenv.config()
 // Initialize Express app
 const app = express()
 const PORT = process.env.PORT || 5000
+
+// Initialize Sentry if DSN provided
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    release: process.env.SENTRY_RELEASE || 'izi-backend@1.0.0',
+    serverName: os.hostname(),
+    tracesSampleRate: 0.0 // disable tracing by default
+  })
+  // Request handler should be the first middleware
+  app.use(Sentry.Handlers.requestHandler())
+  app.use(Sentry.Handlers.errorHandler())
+}
 
 // Security middleware
 app.use(helmet())
@@ -50,9 +68,17 @@ app.use(compression())
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
+// Request ID middleware (assigns a requestId to each request)
+app.use(requestIdMiddleware)
+
 // Logging middleware
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined'))
+  // Morgan -> Winston
+  app.use(morgan('combined', {
+    stream: {
+      write: (message) => logger.info(message.trim())
+    }
+  }))
 }
 
 // Health check endpoint
@@ -87,46 +113,42 @@ app.use('*', (req, res) => {
 
 // Global error handler
 app.use((error, req, res, next) => {
-  console.error('Global error:', error)
-  
+  logger.error('Global error', { error, requestId: req.requestId })
+  if (process.env.SENTRY_DSN) {
+    try { Sentry.captureException(error, { extra: { requestId: req.requestId } }) } catch (e){}
+  }
+
   res.status(error.status || 500).json({
     error: error.message || 'Erro interno do servidor',
     ...(process.env.NODE_ENV === 'development' && {
       stack: error.stack,
       details: error
     }),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    requestId: req.requestId
   })
 })
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down gracefully')
+  logger.info('SIGTERM received, shutting down gracefully')
   process.exit(0)
 })
 
 process.on('SIGINT', () => {
-  console.log('SIGINT received, shutting down gracefully')
+  logger.info('SIGINT received, shutting down gracefully')
   process.exit(0)
 })
 
 // Start server
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
-    console.log(`
-🚀 IZI Backend API Server
-🌐 Environment: ${process.env.NODE_ENV || 'development'}
-🔗 Port: ${PORT}
-📚 API Base URL: http://localhost:${PORT}/api
-⚡ Health Check: http://localhost:${PORT}/health
-
-Available endpoints:
-🔐 /api/auth - Authentication (login, register)
-👤 /api/users - User management
-📚 /api/courses - Courses management
-🎓 /api/enrollments - Course enrollments
-📊 /api/progress - User progress tracking
-    `)
+    logger.info('\n🚀 IZI Backend API Server')
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`)
+    logger.info(`Port: ${PORT}`)
+    logger.info(`API Base URL: http://localhost:${PORT}/api`)
+    logger.info(`Health Check: http://localhost:${PORT}/health`)
+    logger.info('Available endpoints: /api/auth, /api/users, /api/courses, /api/enrollments, /api/progress')
   })
 }
 

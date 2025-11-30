@@ -1,3 +1,5 @@
+import logger from '../utils/logger.js'
+
 // Custom error class
 export class AppError extends Error {
   constructor(message, statusCode = 500, code = null) {
@@ -24,13 +26,14 @@ export const errorHandler = (error, req, res, next) => {
   err.message = error.message
 
   // Log error
-  console.error('🚨 Error:', {
+  logger.error('🚨 Error', {
     message: error.message,
     stack: error.stack,
     url: req.url,
     method: req.method,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
+    requestId: req.requestId,
     timestamp: new Date().toISOString()
   })
 

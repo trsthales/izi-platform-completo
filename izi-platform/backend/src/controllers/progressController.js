@@ -2,12 +2,15 @@ import {query, transaction} from '../config/database.js'
 import {AppError, asyncHandler} from '../middleware/errorHandler.js'
 import {authenticate} from '../middleware/auth.js'
 import {validateUpdateProgress, validateCourseProgressQuery} from '../middleware/validators.js'
+import logger from '../utils/logger.js'
+import maskObject from '../utils/logMask.js'
 
 // Update user progress for a module
 export const updateModuleProgress = [
     authenticate,
     validateUpdateProgress,
     asyncHandler(async (req, res) => {
+        logger.info('updateModuleProgress called', { requestId: req.requestId, userId: req.user?.id, body: maskObject(req.body) })
         const {moduleId, completed} = req.body
         const userId = req.user.id
 
@@ -80,6 +83,8 @@ export const updateModuleProgress = [
                 }
             }
         })
+
+        logger.info('updateModuleProgress success', { requestId: req.requestId, userId, moduleId, courseId: module.course_id, completed: progressResult.completed })
     })
 ];
 
@@ -88,6 +93,7 @@ export const getCourseProgress = [
     authenticate,
     validateCourseProgressQuery,
     asyncHandler(async (req, res) => {
+        logger.info('getCourseProgress called', { requestId: req.requestId, userId: req.user?.id, courseId: req.params.courseId })
         const {courseId} = req.params
         const userId = req.user.id
 
@@ -134,6 +140,8 @@ export const getCourseProgress = [
                 modules
             }
         })
+
+        logger.info('getCourseProgress success', { requestId: req.requestId, userId, courseId, progressPercentage })
     })
 ]
 
@@ -141,6 +149,7 @@ export const getCourseProgress = [
 export const getOverallProgress = [
     authenticate,
     asyncHandler(async (req, res) => {
+        logger.info('getOverallProgress called', { requestId: req.requestId, userId: req.user?.id })
         const userId = req.user.id
 
         // Get progress across all enrolled courses
@@ -190,6 +199,8 @@ export const getOverallProgress = [
                 courses
             }
         })
+
+        logger.info('getOverallProgress success', { requestId: req.requestId, userId })
     })
 ]
 

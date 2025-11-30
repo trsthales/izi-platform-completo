@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "test": "jest",
     "seed": "node src/seeds/seedDatabase.js",
-    "migrate": "node scripts/run_migrations.js"
+    "migrate": "node scripts/run_migrations.js",
+    "logging:smoke": "node scripts/logging_smoke_test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -23,7 +24,11 @@
     "morgan": "^1.10.0",
     "pg": "^8.11.3",
     "jsonwebtoken": "^9.0.2",
-    "slugify": "^1.6.6"
+    "slugify": "^1.6.6",
+    "winston": "^3.9.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "uuid": "^9.0.0",
+    "@sentry/node": "^8.19.0"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.23.5",

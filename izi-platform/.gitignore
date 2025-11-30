@@ -1,78 +1,30 @@
-# Node modules (global and per-package)
+# Node
 node_modules/
-**/node_modules/
-
-# Build output
-dist/
-build/
-out/
-.vite/
-frontend/dist/
 
 # Logs
-logs
+logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Environment files
+# Env
 .env
-.env.*
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
-# OS files
-.DS_Store
+# OS
 Thumbs.db
-desktop.ini
+Desktop.ini
 
-# Editor/IDE
-.vscode/
+# IDE
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.iml
+.vscode/
 
-# Coverage
-coverage/
-.nyc_output/
+# Frontend build
+/dist/
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-*.temp
+# Backend build
+/build/
 
-# Database files
-*.sqlite
-*.db
-
-# PM2
-pm-debug.log
-pids/
-
-# Vite / cache
-node_modules/.vite/
-.vite
-
-# Mac/Windows swap files
-*.swp
-
-# Misc
-.envrc
-.DS_Store
-
-# Keep package-lock.json and yarn.lock tracked (recommended), remove above if you prefer to ignore them
-
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
