@@ -1,4 +1,4 @@
-import { query } from '../config/database.js'
+import { query, transaction } from '../config/database.js'
 import { AppError, asyncHandler } from '../middleware/errorHandler.js'
 import { optionalAuth } from '../middleware/auth.js'
 import { 
@@ -222,8 +222,37 @@ export const getCourseModules = [
   })
 ]
 
+// Create course (admin only)
+export const createCourse = [
+  asyncHandler(async (req, res) => {
+    const { title, description, category, duration, level, price, icon, thumbnail_url, is_published } = req.body
+
+    if (!title || !description) {
+      throw new AppError('Título e descrição são obrigatórios', 400, 'MISSING_FIELDS')
+    }
+
+    const result = await transaction(async (client) => {
+      const insertResult = await client.query(
+        `INSERT INTO courses (title, description, category, duration, level, price, icon, thumbnail_url, is_published)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, title, description, category, duration, level, price, icon, thumbnail_url, is_published, created_at`,
+        [title, description, category || 'other', duration || null, level || 'beginner', price || 0.0, icon || null, thumbnail_url || null, !!is_published]
+      )
+
+      return insertResult.rows[0]
+    })
+
+    res.status(201).json({
+      success: true,
+      message: 'Curso criado com sucesso',
+      data: { course: result }
+    })
+  })
+]
+
 export default {
   getAllCourses,
   getCourse,
-  getCourseModules
+  getCourseModules,
+  createCourse
 }

@@ -16,6 +16,12 @@ export const PublicRoute = ({ children }) => {
   return !isAuthenticated ? children : <Navigate to="/cursos" replace />
 }
 
+// Admin Route Component (restrict access to admin users)
+export const AdminRoute = ({ children }) => {
+  const { user } = useAuthStore()
+  return user?.is_admin ? children : <Navigate to="/" replace />
+}
+
 function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

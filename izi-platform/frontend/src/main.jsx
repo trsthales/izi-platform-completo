@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import App, { ProtectedRoute, PublicRoute } from './App.jsx'
+import App, { ProtectedRoute, PublicRoute, AdminRoute } from './App.jsx'
 import './index.css'
 
 // Pages
@@ -11,6 +11,7 @@ import RegisterPage from './pages/RegisterPage'
 import MyCoursesPage from './pages/MyCoursesPage'
 import CoursePage from './pages/CoursePage'
 import NotFoundPage from './pages/NotFoundPage'
+import CreateCoursePage from './pages/CreateCoursePage'
 
 // Create router with future flag to opt into v7 relative splat behavior
 const router = createBrowserRouter([
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
       { path: 'registrar', element: <PublicRoute><RegisterPage /></PublicRoute> },
       { path: 'cursos', element: <ProtectedRoute><MyCoursesPage /></ProtectedRoute> },
       { path: 'curso/:courseId', element: <ProtectedRoute><CoursePage /></ProtectedRoute> },
+      { path: 'admin/cursos/novo', element: <AdminRoute><CreateCoursePage /></AdminRoute> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

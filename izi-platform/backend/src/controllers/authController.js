@@ -29,7 +29,7 @@ export const register = [
       const userResult = await client.query(
         `INSERT INTO users (name, email, password) 
          VALUES ($1, $2, $3) 
-         RETURNING id, name, email, created_at`,
+         RETURNING id, name, email, is_admin, created_at`,
         [name, email, hashedPassword]
       )
 
@@ -47,6 +47,7 @@ export const register = [
           id: result.id,
           name: result.name,
           email: result.email,
+          is_admin: result.is_admin,
           created_at: result.created_at
         },
         token
@@ -63,7 +64,7 @@ export const login = [
 
     // Find user
     const userResult = await query(
-      'SELECT id, name, email, password, created_at FROM users WHERE email = $1',
+      'SELECT id, name, email, password, is_admin, created_at FROM users WHERE email = $1',
       [email]
     )
 
@@ -93,6 +94,7 @@ export const login = [
           id: user.id,
           name: user.name,
           email: user.email,
+          is_admin: user.is_admin,
           created_at: user.created_at
         },
         token
@@ -106,7 +108,7 @@ export const getProfile = [
   authenticate,
   asyncHandler(async (req, res) => {
     const userResult = await query(
-      'SELECT id, name, email, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, is_admin, created_at FROM users WHERE id = $1',
       [req.user.id]
     )
 

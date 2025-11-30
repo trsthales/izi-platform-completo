@@ -34,9 +34,9 @@ export const authenticate = async (req, res, next) => {
     const token = authHeader.substring(7) // Remove 'Bearer ' prefix
     const decoded = verifyToken(token)
     
-    // Fetch user from database
+    // Fetch user from database including is_admin
     const userResult = await query(
-      'SELECT id, name, email, created_at FROM users WHERE id = $1',
+      'SELECT id, name, email, is_admin, created_at FROM users WHERE id = $1',
       [decoded.userId]
     )
     
@@ -67,7 +67,7 @@ export const optionalAuth = async (req, res, next) => {
       const decoded = verifyToken(token)
       
       const userResult = await query(
-        'SELECT id, name, email, created_at FROM users WHERE id = $1',
+        'SELECT id, name, email, is_admin, created_at FROM users WHERE id = $1',
         [decoded.userId]
       )
       
@@ -80,6 +80,23 @@ export const optionalAuth = async (req, res, next) => {
   }
   
   next()
+}
+
+// Authorization middleware for admin-only routes
+export const authorizeAdmin = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Token de acesso necessário', code: 'MISSING_TOKEN' })
+    }
+
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Acesso restrito a administradores', code: 'ADMIN_ONLY' })
+    }
+
+    next()
+  } catch (error) {
+    return res.status(500).json({ error: 'Erro ao verificar permissão de administrador', code: 'ADMIN_CHECK_ERROR' })
+  }
 }
 
 // Check if user owns resource
@@ -124,5 +141,6 @@ export default {
   verifyToken,
   authenticate,
   optionalAuth,
-  checkResourceOwnership
+  checkResourceOwnership,
+  authorizeAdmin
 }

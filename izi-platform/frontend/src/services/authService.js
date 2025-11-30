@@ -124,6 +124,11 @@ export const courseService = {
     return response.data?.data?.enrollment || null
   },
 
+  async createCourse(courseData) {
+    const response = await api.post('/courses', courseData)
+    return response.data?.data?.course || null
+  },
+
   async getMyEnrollments() {
     const response = await api.get('/enrollments/my-courses')
     return response.data?.data?.enrollments || []
