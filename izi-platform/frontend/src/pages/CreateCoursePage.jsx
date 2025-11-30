@@ -15,6 +15,7 @@ const CreateCoursePage = () => {
     price: 0.0,
     icon: '',
     thumbnail_url: '',
+    link: '',
     is_published: false
   })
   const [loading, setLoading] = useState(false)
@@ -98,6 +99,11 @@ const CreateCoursePage = () => {
             </div>
           </div>
 
+          <div>
+            <label className="label">Link (URL)</label>
+            <input name="link" value={formData.link} onChange={handleChange} type="url" placeholder="https://..." className="input" />
+          </div>
+
           <div className="flex items-center space-x-4">
             <label className="flex items-center">
               <input type="checkbox" name="is_published" checked={formData.is_published} onChange={handleChange} className="mr-2" />
@@ -115,4 +121,3 @@ const CreateCoursePage = () => {
 }
 
 export default CreateCoursePage
-

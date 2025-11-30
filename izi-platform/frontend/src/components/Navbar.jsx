@@ -43,6 +43,15 @@ const Navbar = () => {
                 <span>Meus Cursos</span>
               </Link>
             )}
+
+            {isAuthenticated && user?.is_admin && (
+              <Link
+                to="/admin/cursos"
+                className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <span>Admin</span>
+              </Link>
+            )}
           </div>
 
           {/* User Menu */}
