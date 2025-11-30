@@ -15,6 +15,8 @@ import progressRoutes from './routes/progress.js'
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler.js'
+import logger from './utils/logger.js'
+import requestIdMiddleware from './middleware/requestId.js'
 
 // Load environment variables
 dotenv.config()
@@ -26,13 +28,38 @@ const PORT = process.env.PORT || 5000
 // Security middleware
 app.use(helmet())
 
+// Request ID - ensure this runs before any logging/CORS
+app.use(requestIdMiddleware)
+
 // CORS configuration
+const frontendEnv = process.env.FRONTEND_URL || ''
+const frontendListEnv = process.env.FRONTEND_URLS || ''
+// Build allowed origins list: support single FRONTEND_URL or comma-separated FRONTEND_URLS
+const allowedOrigins = new Set(
+  [
+    'http://localhost:3000', // keep local dev by default
+    ...(frontendEnv ? [frontendEnv] : []),
+    ...((frontendListEnv || '').split(',').map(s => s.trim()).filter(Boolean))
+  ]
+)
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., mobile apps, curl, same-origin)
+    if (!origin) return callback(null, true)
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true)
+    }
+    // For debugging, you can log the rejected origin
+    logger && logger.warn && logger.warn('CORS origin denied', { origin })
+    return callback(new Error('CORS policy: This origin is not allowed'))
+  },
   credentials: true,
   optionsSuccessStatus: 200
 }
 app.use(cors(corsOptions))
+// Ensure OPTIONS preflight requests are handled
+app.options('*', cors(corsOptions))
 
 // Rate limiting
 const limiter = rateLimit({
@@ -52,7 +79,7 @@ app.use(express.urlencoded({ extended: true }))
 
 // Logging middleware
 if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined'))
+  app.use(morgan('combined', { stream: { write: (msg) => logger.info(msg.trim()) } }))
 }
 
 // Health check endpoint
